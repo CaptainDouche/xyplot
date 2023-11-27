@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<script type="text/javascript">
+
+</script>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>xyPlotTest</title>
+<link rel="stylesheet" type="text/css" href="std.css" />
+
+<script type="text/javascript">
+
+function elem(id)
+{
+	return document.getElementById(id);
+}
+
+function elemValue(id)
+{
+	var e = elem(id);
+	if (e == null) 
+		return null;
+		
+	switch (e.type)
+	{
+		case 'number': 		{ return parseFloat(e.value); }
+		case 'checkbox':	{ return e.checked; }
+		case 'text':		{ return (e.nodeName == 'TEXTAREA') ? elem.textContent : e.value; }		
+		default: 			{ return e.value; }		
+	}
+}
+
+</script>
+<script type="text/javascript" src="xyplot.js"></script>
+
+
+</head>
+
+<body onload="javascript:onPageLoad()">
+<h1>xyPlotTest</h1>
+
+
+<table>
+	<tr> 
+		<td>Caption, Unit</td>
+		<td>
+			<input type="text" id="caption" value="MyXyPlot1" onchange="javascript:setupChanged('caption')"></input> 
+			<input type="text" id="unit"    value="°C"        onchange="javascript:setupChanged('unit')"></input> 
+		</td>
+	</tr>
+	<tr> 
+		<td>plotType</td>
+		<td>
+			<!--
+			<select id="plotType" onclick="javascript:setupChanged('plotType')">
+				<option value="linepoints">linepoints</option>	
+				<option value="lines">lines</option>
+				<option value="points">points</option>				
+				<option value="area">area</option>
+				<option value="bars">bars</option>
+				<option value="squared">squared</option>
+				<option value="squaredarea">squaredarea</option>
+				<option value="thinbarline">thinbarline</option>
+			</select>
+			-->
+			<input type="checkbox" id="drawPoints" checked="true" onchange="javascript:setupChanged('drawPoints')"  ></input> drawPoints 
+			<input type="checkbox" id="drawLines"  checked="true" onchange="javascript:setupChanged('drawLines')"   ></input> drawLines 
+			<input type="checkbox" id="drawBars"                  onchange="javascript:setupChanged('drawBars')"    ></input> drawBars 
+			<input type="checkbox" id="useNegYColor"              onchange="javascript:setupChanged('useNegYColor')"></input> useNegYColor 
+			<input type="checkbox" id="flipNegY"                  onchange="javascript:setupChanged('flipNegY')"    ></input> flipNegY 
+		</td>
+	</tr>
+	<tr> 
+		<td>PlotColor</td>
+		<td>
+			<input type="color" id="plotColor" value="#ff0000" onchange="javascript:setupChanged('plotColor')"></input> 
+		</td>
+	</tr>	
+	
+
+	<tr> 
+		<td>X min/ max</td>
+		<td>
+			<input type="number" id="xAxisMin" min="NaN" step="1.0" value="-100" onclick="javascript:setupChanged('xAxisMin')"></input> 
+			<input type="number" id="xAxisMax" min="NaN" step="1.0" value="100"  onclick="javascript:setupChanged('xAxisMax')"></input>
+			<input type="checkbox" id="xAxisAutoscale" checked="true" onchange="javascript:setupChanged('yAxisAutoscale')"></input> Autoscale 
+			<input type="checkbox" id="isTime" checked="true" onchange="javascript:setupChanged('isTime')"></input> isTime 
+		</td>
+	</tr>
+
+	<tr> 
+		<td>Y min/max</td>
+		<td>
+			<input type="number" id="yAxisMin" min="NaN" step="1.0" value="-100" onchange="javascript:setupChanged('yAxisMin')"></input> 
+			<input type="number" id="yAxisMax" min="NaN" step="1.0" value="100"  onchange="javascript:setupChanged('yAxisMax')"></input> 
+			<input type="checkbox" id="yAxisAutoscale" checked="true" onchange="javascript:setupChanged('yAxisAutoscale')"></input> Autoscale 
+		</td>
+	</tr>
+
+	<tr> 
+		<td>Data</td>
+		<td>
+URL: <input type="text" id="plotDataUrl" style="width: 80%"></input> 
+<button type="button" onclick="javascript:onButtonClearPlotDataClick()" >Download</button>
+
+		
+		
+<textarea type="text" id="plotData" style="width:97%; xxxwidth:48em; xxheight:50%;" rows="10" wrap="off"
+onchange="javascript:setupChanged('plotData')"
+>
+20 30
+  30 ;  	-99
+40 50
+</textarea>
+			<input type="file" id="inputPlotData" onchange="javascript:loadFile()" accept=".txt, .csv" />		
+			&nbsp;
+			<button type="button" onclick="javascript:onButtonClearPlotDataClick()" >Clear</button>	
+		</td>
+		
+		
+		
+	</tr>
+	
+</table>
+
+<button onclick="javascript:onButtonCreateGraphClick()">Create Graph</button>
+
+<hr/>
+<canvas style="width:auto; height:auto;" id="graph1" ></canvas>
+<hr/>
+
+<br/>
+
+<script type="text/javascript">
+
+function onPageLoad()
+{
+	onButtonCreateGraphClick();
+}
+
+var graphDef1 = null;
+var i = 0;
+
+function parsePlotData()
+{
+	function lineIsValid(line)
+	{
+		return (line.length>0) && (line.substring(0, 1) != "#");
+	}
+
+	var txt = elemValue("plotData");
+	var lines = txt.split("\n");
+	
+	var data = [];
+	for (var i=0; i<lines.length; i++)
+	{
+		var line = lines[i];
+		line = line.trim();
+
+		if (!lineIsValid(line)) continue;
+		
+		var toks = line.includes(";") ? line.split(";") : line.split(/\s+/);
+		
+		var row = [];
+		for (var j=0; j<toks.length; j++)
+		{
+			row.push(parseFloat(toks[j].trim()));
+		}
+		data.push(row);
+	}
+	
+	// console.log("parsePlotData: %o", data);	
+	return data;
+}
+
+function onButtonCreateGraphClick()
+{
+	graphDef1 = { 
+		id:           "graph1",
+		caption:      elemValue('caption'),	
+		unit:         elemValue('unit'),	
+		debugText:    "debugText #" + (i++),
+		backColor:    "#040404",
+		axisColor:    "gray",
+		fontColor:    "gray",
+		plotColor:    elemValue('plotColor'),
+		drawPoints:	  elemValue('drawPoints'),
+		drawLines:	  elemValue('drawLines'),
+		drawBars:	  elemValue('drawBars'),
+		//drawArea:	  elemValue('drawArea'),
+		flipNegY:	  elemValue('flipNegY'),
+		useNegYColor: elemValue('useNegYColor') || elemValue('flipNegY'),
+		xAxis: {
+			min:       elemValue('xAxisMin'),
+			max:       elemValue('xAxisMax'),
+			autoScale: elemValue('xAxisAutoscale'),
+			isTime:    elemValue('isTime'),			
+		},	
+		yAxis: {
+			labels:    null,
+			min:       elemValue('yAxisMin'),	
+			max:       elemValue('yAxisMax'),
+			autoScale: elemValue('yAxisAutoscale')
+		},
+  		points:        parsePlotData()
+	};
+
+	/*
+	if (plotMode == PLOTMODE_FIFO)
+	{
+		graphDef1.liveMode  = true;
+
+		graphDef1.xMax      = zoomPresets[zoomPos][0];
+		graphDef1.xLabels   = zoomPresets[zoomPos][1];
+
+		createGraph("graph1", graphDef1);
+		loadFifo(id, onFifoDownloaded);
+	}
+	else
+	if (plotMode == PLOTMODE_LAST24H)
+	{
+		var t     = time() - 86400;
+		var td    = Math.floor(t / 3600) * 3600; // down-rounded to last ful hour
+		var dt    = 86400 + 3600;
+		
+		var date  = new Date(td * 1000);
+		var hours = date.getHours();
+
+		graphDef1.xMin = td;   
+		graphDef1.xMax = td + 86400 + 3600; // ignored if tRangeMax given => realtime mode
+
+		graphDef1.caption += " " + (new Date(t*1000)).toLocaleDateString() + " + 24h";
+
+		for (var i=0; i<=25; i++) 
+			graphDef1.xLabels.push((hours + i) % 24);
+
+		createGraph("graph1", graphDef1);
+
+		console.log("loadArch: td = " + td);
+		loadArch(id, td, dt, onArchDownloaded);
+	}
+	else if (plotMode == PLOTMODE_DAY)
+	{
+		var inpDate = getElement("calendar").value;
+		var tmidn   = Math.floor((new Date(inpDate + " 00:00:00")).getTime() / 1000);
+		var dt    = 86400;
+		var t0    = tmidn;
+
+		graphDef1.xMin = t0;	   
+		graphDef1.xMax = t0 + 86400; // ignored if tRangeMax given => realtime mode
+
+		graphDef1.caption += " " + inpDate;
+
+		for (var i=0; i<=24; i++) 
+			graphDef1.xLabels.push(i);
+
+		createGraph("graph1", graphDef1);
+
+		console.log("loadArch: t0 = " + t0); //  + " = " + (new Date(t0*1000)).toLocaleTimeString());
+		loadArch(id, t0, dt, onArchDownloaded);
+	}
+	*/
+	
+	xyplot_createGraph(graphDef1);
+}
+
+function onPlotCanvasClick(gd, p)
+{
+	// if (p.zone == Zone.LEFT) { ... }
+}
+
+function setupChanged(source)
+{
+	console.log("setupChanged: " + source);
+	onButtonCreateGraphClick();
+}
+
+function onButtonClearPlotDataClick()
+{
+	elem("plotData").value = "";
+	onButtonCreateGraphClick();
+}
+
+function onButtonClearPlotDataClick()
+{
+	var xhr = new XMLHttpRequest();
+	xhr.onreadystatechange = function() 
+	{
+		if (xhr.readyState == 4)
+		{
+			if (xhr.status == 200)
+			{
+				elem("plotData").value =  xhr.responseText;
+				onButtonCreateGraphClick();
+			}
+		}
+	};
+	
+	var url = elemValue('plotDataUrl');
+	xhr.open("GET", url, true);
+	xhr.send();
+}
+
+function loadFile()
+{
+	var file = elem("inputPlotData").files[0];
+	console.log(file);
+	
+	var reader = new FileReader();
+	reader.onload = function (e) {
+		var lines = e.target.result;
+		
+		elem("plotData").value = lines;
+		console.log("loaded file=%o", file);
+		onButtonCreateGraphClick();
+	};
+	reader.readAsText(file);
+}
+
+function onButtonPasteOverClick() 
+{
+	var plotData = elem("plotData");
+	plotData.select();
+	plotData.setSelectionRange(0, 999999);
+	document.execCommand("paste");
+}
+
+</script>
+
+</body>
+</html>
