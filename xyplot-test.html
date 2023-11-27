@@ -205,69 +205,8 @@ function onButtonCreateGraphClick()
 		},
   		points:        parsePlotData()
 	};
-
-	/*
-	if (plotMode == PLOTMODE_FIFO)
-	{
-		graphDef1.liveMode  = true;
-
-		graphDef1.xMax      = zoomPresets[zoomPos][0];
-		graphDef1.xLabels   = zoomPresets[zoomPos][1];
-
-		createGraph("graph1", graphDef1);
-		loadFifo(id, onFifoDownloaded);
-	}
-	else
-	if (plotMode == PLOTMODE_LAST24H)
-	{
-		var t     = time() - 86400;
-		var td    = Math.floor(t / 3600) * 3600; // down-rounded to last ful hour
-		var dt    = 86400 + 3600;
-		
-		var date  = new Date(td * 1000);
-		var hours = date.getHours();
-
-		graphDef1.xMin = td;   
-		graphDef1.xMax = td + 86400 + 3600; // ignored if tRangeMax given => realtime mode
-
-		graphDef1.caption += " " + (new Date(t*1000)).toLocaleDateString() + " + 24h";
-
-		for (var i=0; i<=25; i++) 
-			graphDef1.xLabels.push((hours + i) % 24);
-
-		createGraph("graph1", graphDef1);
-
-		console.log("loadArch: td = " + td);
-		loadArch(id, td, dt, onArchDownloaded);
-	}
-	else if (plotMode == PLOTMODE_DAY)
-	{
-		var inpDate = getElement("calendar").value;
-		var tmidn   = Math.floor((new Date(inpDate + " 00:00:00")).getTime() / 1000);
-		var dt    = 86400;
-		var t0    = tmidn;
-
-		graphDef1.xMin = t0;	   
-		graphDef1.xMax = t0 + 86400; // ignored if tRangeMax given => realtime mode
-
-		graphDef1.caption += " " + inpDate;
-
-		for (var i=0; i<=24; i++) 
-			graphDef1.xLabels.push(i);
-
-		createGraph("graph1", graphDef1);
-
-		console.log("loadArch: t0 = " + t0); //  + " = " + (new Date(t0*1000)).toLocaleTimeString());
-		loadArch(id, t0, dt, onArchDownloaded);
-	}
-	*/
 	
 	xyplot_createGraph(graphDef1);
-}
-
-function onPlotCanvasClick(gd, p)
-{
-	// if (p.zone == Zone.LEFT) { ... }
 }
 
 function setupChanged(source)
